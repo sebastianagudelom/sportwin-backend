@@ -18,8 +18,8 @@ public class Deporte {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_deporte;
+    private Long idDeporte;
     
-    private String nombre_deporte;
+    private String nombreDeporte;
     private String descripcion;
 }

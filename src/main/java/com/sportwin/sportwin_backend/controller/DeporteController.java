@@ -41,8 +41,8 @@ public class DeporteController {
     public Deporte updateDeporte(@PathVariable Long id, @RequestBody Deporte deporte) {
         Deporte deporteExistente = deporteRepository.findById(id).orElse(null);
         if (deporteExistente != null) {
-            deporteExistente.setId_deporte(id);
-            deporteExistente.setNombre_deporte(deporte.getNombre_deporte());
+            deporteExistente.setIdDeporte(id);
+            deporteExistente.setNombreDeporte(deporte.getNombreDeporte());
             deporteExistente.setDescripcion(deporte.getDescripcion());
             return deporteRepository.save(deporte);
         }
