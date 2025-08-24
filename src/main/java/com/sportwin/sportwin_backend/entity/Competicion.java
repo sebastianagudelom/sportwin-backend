@@ -23,7 +23,7 @@ public class Competicion {
     @JoinColumn(name = "idDeporte", nullable = false)
     private Deporte deporte;
     
-    @Column(name = "nombre_competicion", nullable = false, length = 100)
+    @Column(name = "nombreCompeticion", nullable = false, length = 100)
     private String nombreCompeticion;
     
     @Column(name = "lugar", length = 50)
