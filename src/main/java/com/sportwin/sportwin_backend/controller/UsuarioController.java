@@ -61,4 +61,10 @@ public class UsuarioController {
         usuarioRepository.deleteById(id);
         return "Usuario con id " + id + " eliminado correctamente.";
     }
+
+    // Endpoint de prueba
+    @GetMapping("/test")
+    public String test() {
+        return "UsuarioController test endpoint working!";
+    }
 }
