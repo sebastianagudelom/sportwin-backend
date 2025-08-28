@@ -1,70 +1,94 @@
 package com.sportwin.sportwin_backend.controller;
 
 import com.sportwin.sportwin_backend.entity.Usuario;
-import com.sportwin.sportwin_backend.repository.UsuarioRepository;
+import com.sportwin.sportwin_backend.service.interfaces.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     // Listar todos los usuarios
-    @GetMapping // http://localhost:8080/api/usuarios
-    public List<Usuario> getUsuarios() {
-        return usuarioRepository.findAll();
+    @GetMapping
+    public ResponseEntity<List<Usuario>> getUsuarios() {
+        try {
+            List<Usuario> usuarios = usuarioService.obtenerTodosLosUsuarios();
+            return ResponseEntity.ok(usuarios);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // Buscar usuario por ID
-    @GetMapping("/{id}") // http://localhost:8080/api/usuarios/{id}
-    public Usuario getUsuarioById(@PathVariable Long id) {
-        return usuarioRepository.findById(id).orElse(null);
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
+        try {
+            Usuario usuario = usuarioService.obtenerUsuarioPorId(id);
+            return ResponseEntity.ok(usuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Buscar usuario por correo
+    @GetMapping("/correo/{correo}")
+    public ResponseEntity<Usuario> getUsuarioByCorreo(@PathVariable String correo) {
+        try {
+            Usuario usuario = usuarioService.obtenerUsuarioPorCorreo(correo);
+            return ResponseEntity.ok(usuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // Crear usuario
-    @PostMapping // http://localhost:8080/api/usuarios
-    public Usuario createUsuario(@RequestBody Usuario usuario) {
-        usuario.setFechaRegistro(LocalDate.now()); // asigna fecha automática
-        return usuarioRepository.save(usuario);
+    @PostMapping
+    public ResponseEntity<?> createUsuario(@RequestBody Usuario usuario) {
+        try {
+            Usuario usuarioCreado = usuarioService.crearUsuario(usuario);
+            return ResponseEntity.ok(usuarioCreado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al crear el usuario: " + e.getMessage());
+        }
     }
 
     // Actualizar usuario
-    @PutMapping("/{id}") // http://localhost:8080/api/usuarios/{id}
-    public Usuario updateUsuario(@PathVariable Long id, @RequestBody Usuario usuario) {
-        Usuario usuarioExistente = usuarioRepository.findById(id).orElse(null);
-        if (usuarioExistente != null) {
-            usuarioExistente.setNombre(usuario.getNombre());
-            usuarioExistente.setApellido(usuario.getApellido());
-            usuarioExistente.setFechaNacimiento(usuario.getFechaNacimiento());
-            usuarioExistente.setCedula(usuario.getCedula());
-            usuarioExistente.setCorreo(usuario.getCorreo());
-            usuarioExistente.setUsername(usuario.getUsername());
-            usuarioExistente.setContrasena(usuario.getContrasena());
-            usuarioExistente.setEstado(usuario.getEstado());
-            usuarioExistente.setDireccion(usuario.getDireccion());
-            usuarioExistente.setTelefono(usuario.getTelefono());
-            usuarioExistente.setSaldo(usuario.getSaldo());
-            return usuarioRepository.save(usuarioExistente);
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUsuario(@PathVariable Long id, @RequestBody Usuario usuario) {
+        try {
+            usuario.setIdUsuario(id);
+            Usuario usuarioActualizado = usuarioService.actualizarUsuario(usuario);
+            return ResponseEntity.ok(usuarioActualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al actualizar el usuario: " + e.getMessage());
         }
-        return null;
     }
 
     // Eliminar usuario
-    @DeleteMapping("/{id}") // http://localhost:8080/api/usuarios/{id}
-    public String deleteUsuario(@PathVariable Long id) {
-        usuarioRepository.deleteById(id);
-        return "Usuario con id " + id + " eliminado correctamente.";
-    }
-
-    // Endpoint de prueba
-    @GetMapping("/test")
-    public String test() {
-        return "UsuarioController test endpoint working!";
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
+        try {
+            usuarioService.eliminarUsuario(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al eliminar el usuario: " + e.getMessage());
+        }
     }
 }
