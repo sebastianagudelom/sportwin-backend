@@ -1,104 +1,116 @@
 package com.sportwin.sportwin_backend.controller;
 
 import com.sportwin.sportwin_backend.entity.Transaccion;
-
-import com.sportwin.sportwin_backend.repository.TransaccionRepository;
-
+import com.sportwin.sportwin_backend.service.interfaces.TransaccionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/transacciones")
+@CrossOrigin(origins = "*")
 public class TransaccionController {
 
     @Autowired
-    private TransaccionRepository transaccionRepository;
+    private TransaccionService transaccionService;
 
-    // Listar todas las transacciones
-    @GetMapping // http://localhost:8080/api/transacciones
-    public List<Transaccion> getTransacciones() {
-        return transaccionRepository.findAll();
-    }
-
-    // Buscar transacción por ID
-    @GetMapping("/{id}") // http://localhost:8080/api/transacciones/{id}
-    public Transaccion getTransaccionById(@PathVariable Long id) {
-        return transaccionRepository.findById(id).orElse(null);
-    }
-
-    // Buscar transacciones por usuario
-    @GetMapping("/usuario/{idUsuario}") // http://localhost:8080/api/transacciones/usuario/{idUsuario}
-    public List<Transaccion> getTransaccionesByUsuario(@PathVariable Long idUsuario) {
-        return transaccionRepository.findByUsuarioIdUsuario(idUsuario);
-    }
-
-    // Buscar transacciones por tipo
-    @GetMapping("/tipo/{tipo}") // http://localhost:8080/api/transacciones/tipo/{tipo}
-    public List<Transaccion> getTransaccionesByTipo(@PathVariable String tipo) {
-        return transaccionRepository.findByTipo(tipo);
-    }
-
-    // Buscar transacciones por estado
-    @GetMapping("/estado/{estado}") // http://localhost:8080/api/transacciones/estado/{estado}
-    public List<Transaccion> getTransaccionesByEstado(@PathVariable String estado) {
-        return transaccionRepository.findByEstadoTransaccion(estado);
-    }
-
-    // Crear transacción
-    @PostMapping // http://localhost:8080/api/transacciones
-    public Transaccion createTransaccion(@RequestBody Transaccion transaccion) {
-        // Asignar fecha automática si no se proporciona
-        if (transaccion.getFecha() == null) {
-            transaccion.setFecha(LocalDateTime.now());
+    @GetMapping
+    public ResponseEntity<List<Transaccion>> getTransacciones() {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerTodasLasTransacciones());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
-        
-        // Asignar estado PENDIENTE por defecto si no se proporciona
-        if (transaccion.getEstadoTransaccion() == null) {
-            transaccion.setEstadoTransaccion("PENDIENTE");
-        }
-        
-        return transaccionRepository.save(transaccion);
     }
 
-    // Actualizar transacción
-    @PutMapping("/{id}") // http://localhost:8080/api/transacciones/{id}
-    public Transaccion updateTransaccion(@PathVariable Long id, @RequestBody Transaccion transaccion) {
-        Transaccion transaccionExistente = transaccionRepository.findById(id).orElse(null);
-        if (transaccionExistente != null) {
-            // Actualizar solo los campos que se pueden modificar
-            transaccionExistente.setTipo(transaccion.getTipo());
-            transaccionExistente.setMonto(transaccion.getMonto());
-            transaccionExistente.setMetodo(transaccion.getMetodo());
-            transaccionExistente.setEstadoTransaccion(transaccion.getEstadoTransaccion());
-            
-            // Solo actualizar fecha si se proporciona una nueva
-            if (transaccion.getFecha() != null) {
-                transaccionExistente.setFecha(transaccion.getFecha());
-            }
-            
-            return transaccionRepository.save(transaccionExistente);
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTransaccionById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerTransaccionPorId(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
-        return null;
     }
 
-    // Actualizar estado de transacción
-    @PatchMapping("/{id}/estado") // http://localhost:8080/api/transacciones/{id}/estado
-    public Transaccion updateEstadoTransaccion(@PathVariable Long id, @RequestBody String estado) {
-        Transaccion transaccion = transaccionRepository.findById(id).orElse(null);
-        if (transaccion != null) {
-            transaccion.setEstadoTransaccion(estado);
-            return transaccionRepository.save(transaccion);
+    @GetMapping("/usuario/{idUsuario}")
+    public ResponseEntity<?> getTransaccionesByUsuario(@PathVariable Long idUsuario) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerTransaccionesPorUsuario(idUsuario));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
-        return null;
     }
 
-    // Eliminar transacción
-    @DeleteMapping("/{id}") // http://localhost:8080/api/transacciones/{id}
-    public String deleteTransaccion(@PathVariable Long id) {
-        transaccionRepository.deleteById(id);
-        return "Transacción con id " + id + " eliminada correctamente.";
+    @GetMapping("/tipo/{tipo}")
+    public ResponseEntity<?> getTransaccionesByTipo(@PathVariable String tipo) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerTransaccionesPorTipo(tipo));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<?> getTransaccionesByEstado(@PathVariable String estado) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerTransaccionesPorEstado(estado));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createTransaccion(@RequestBody Transaccion transaccion) {
+        try {
+            return ResponseEntity.ok(transaccionService.crearTransaccion(transaccion));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTransaccion(@PathVariable Long id, @RequestBody Transaccion transaccion) {
+        try {
+            return ResponseEntity.ok(transaccionService.actualizarTransaccion(id, transaccion));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<?> updateEstadoTransaccion(@PathVariable Long id, @RequestBody String estado) {
+        try {
+            return ResponseEntity.ok(transaccionService.actualizarEstadoTransaccion(id, estado));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTransaccion(@PathVariable Long id) {
+        try {
+            transaccionService.eliminarTransaccion(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 }

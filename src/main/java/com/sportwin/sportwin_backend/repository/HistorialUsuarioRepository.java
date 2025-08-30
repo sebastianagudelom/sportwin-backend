@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface HistorialUsuarioRepository extends JpaRepository<HistorialUsuario, Integer> {
-    Optional<HistorialUsuario> findByUsuario_IdUsuario(Integer idUsuario);
+public interface HistorialUsuarioRepository extends JpaRepository<HistorialUsuario, Long> {
+    Optional<HistorialUsuario> findByUsuario_IdUsuario(Long idUsuario);
 }

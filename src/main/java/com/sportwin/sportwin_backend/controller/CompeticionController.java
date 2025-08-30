@@ -1,15 +1,12 @@
 package com.sportwin.sportwin_backend.controller;
 
 import com.sportwin.sportwin_backend.entity.Competicion;
-import com.sportwin.sportwin_backend.entity.Deporte;
-import com.sportwin.sportwin_backend.repository.CompeticionRepository;
-import com.sportwin.sportwin_backend.repository.DeporteRepository;
+import com.sportwin.sportwin_backend.service.interfaces.CompeticionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/competiciones")
@@ -17,87 +14,93 @@ import java.util.Optional;
 public class CompeticionController {
 
     @Autowired
-    private CompeticionRepository competicionRepository;
-    
-    @Autowired
-    private DeporteRepository deporteRepository;
+    private CompeticionService competicionService;
 
     // Listar todas las competiciones
-    @GetMapping // http://localhost:8080/api/competiciones
-    public List<Competicion> getAllCompeticiones() {
-        return competicionRepository.findAll();
-    }
-
-    // Buscar competicion por ID
-    @GetMapping("/{id}") // http://localhost:8080/api/competiciones/{id}
-    public ResponseEntity<Competicion> getCompeticionById(@PathVariable Long id) {
-        return competicionRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Crear competicion
-    @PostMapping
-    public ResponseEntity<Competicion> createCompeticion(@RequestBody Competicion competicion) {
+    @GetMapping
+    public ResponseEntity<List<Competicion>> getAllCompeticiones() {
         try {
-            // Verificar que el deporte existe
-            if (competicion.getDeporte() != null && competicion.getDeporte().getIdDeporte() != null) {
-                Optional<Deporte> deporte = deporteRepository.findById(competicion.getDeporte().getIdDeporte());
-                if (deporte.isPresent()) {
-                    competicion.setDeporte(deporte.get());
-                } else {
-                    return ResponseEntity.badRequest().build(); // Deporte no existe
-                }
-            }
-            
-            Competicion competicionGuardada = competicionRepository.save(competicion);
-            return ResponseEntity.ok(competicionGuardada);
+            List<Competicion> competiciones = competicionService.obtenerTodasLasCompeticiones();
+            return ResponseEntity.ok(competiciones);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
 
+    // Buscar competicion por ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Competicion> getCompeticionById(@PathVariable Long id) {
+        try {
+            Competicion competicion = competicionService.obtenerCompeticionPorId(id);
+            return ResponseEntity.ok(competicion);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Obtener competiciones por deporte
+    @GetMapping("/deporte/{idDeporte}")
+    public ResponseEntity<List<Competicion>> getCompeticionesByDeporte(@PathVariable Long idDeporte) {
+        try {
+            List<Competicion> competiciones = competicionService.obtenerCompeticionesPorDeporte(idDeporte);
+            return ResponseEntity.ok(competiciones);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Obtener competiciones activas
+    @GetMapping("/activas")
+    public ResponseEntity<List<Competicion>> getCompeticionesActivas() {
+        try {
+            List<Competicion> competiciones = competicionService.obtenerCompeticionesActivas();
+            return ResponseEntity.ok(competiciones);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Crear competicion
+    @PostMapping
+    public ResponseEntity<?> createCompeticion(@RequestBody Competicion competicion) {
+        try {
+            Competicion nuevaCompeticion = competicionService.crearCompeticion(competicion);
+            return ResponseEntity.ok(nuevaCompeticion);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al crear la competición: " + e.getMessage());
+        }
+    }
+
     // Actualizar competicion
     @PutMapping("/{id}")
-    public ResponseEntity<Competicion> updateCompeticion(@PathVariable Long id, @RequestBody Competicion competicionActualizada) {
-        Optional<Competicion> competicionOptional = competicionRepository.findById(id);
-        
-        if (competicionOptional.isPresent()) {
-            Competicion competicionExistente = competicionOptional.get();
-            
-            // Actualizar campos
-            competicionExistente.setNombreCompeticion(competicionActualizada.getNombreCompeticion());
-            competicionExistente.setLugar(competicionActualizada.getLugar());
-            competicionExistente.setTemporadaActual(competicionActualizada.getTemporadaActual());
-            competicionExistente.setEstado(competicionActualizada.getEstado());
-            competicionExistente.setFechaInicio(competicionActualizada.getFechaInicio());
-            competicionExistente.setFechaFin(competicionActualizada.getFechaFin());
-            competicionExistente.setDescripcion(competicionActualizada.getDescripcion());
-            competicionExistente.setLogoUrl(competicionActualizada.getLogoUrl());
-            
-            // Actualizar deporte si viene en la petición
-            if (competicionActualizada.getDeporte() != null && competicionActualizada.getDeporte().getIdDeporte() != null) {
-                Optional<Deporte> deporte = deporteRepository.findById(competicionActualizada.getDeporte().getIdDeporte());
-                if (deporte.isPresent()) {
-                    competicionExistente.setDeporte(deporte.get());
-                }
-            }
-            
-            Competicion competicionGuardada = competicionRepository.save(competicionExistente);
-            return ResponseEntity.ok(competicionGuardada);
+    public ResponseEntity<?> updateCompeticion(@PathVariable Long id, @RequestBody Competicion competicion) {
+        try {
+            competicion.setIdCompeticion(id);
+            Competicion competicionActualizada = competicionService.actualizarCompeticion(competicion);
+            return ResponseEntity.ok(competicionActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al actualizar la competición: " + e.getMessage());
         }
-        
-        return ResponseEntity.notFound().build();
     }
 
     // Eliminar competicion
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCompeticion(@PathVariable Long id) {
-        if (competicionRepository.existsById(id)) {
-            competicionRepository.deleteById(id);
+    public ResponseEntity<?> deleteCompeticion(@PathVariable Long id) {
+        try {
+            competicionService.eliminarCompeticion(id);
             return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al eliminar la competición: " + e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
 
 }

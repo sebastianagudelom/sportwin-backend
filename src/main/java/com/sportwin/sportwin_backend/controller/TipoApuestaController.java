@@ -1,7 +1,7 @@
 package com.sportwin.sportwin_backend.controller;
 
 import com.sportwin.sportwin_backend.entity.TipoApuesta;
-import com.sportwin.sportwin_backend.repository.TipoApuestaRepository;
+import com.sportwin.sportwin_backend.service.interfaces.TipoApuestaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,47 +14,59 @@ import java.util.List;
 public class TipoApuestaController {
 
     @Autowired
-    private TipoApuestaRepository tipoApuestaRepository;
+    private TipoApuestaService tipoApuestaService;
 
-    // Listar todos los tipos de apuesta
-    @GetMapping // http://localhost:8080/api/tipos-apuesta
-    public List<TipoApuesta> getAllTiposApuesta() {
-        return tipoApuestaRepository.findAll();
-    }
-
-    // Buscar tipo de apuesta por ID
-    @GetMapping("/{id}") // http://localhost:8080/api/tipos-apuesta/{id}
-    public ResponseEntity<TipoApuesta> getTipoApuestaById(@PathVariable Long id) {
-        return tipoApuestaRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Crear tipo de apuesta
-    @PostMapping // http://localhost:8080/api/tipos-apuesta
-    public TipoApuesta createTipoApuesta(@RequestBody TipoApuesta tipoApuesta) {
-        return tipoApuestaRepository.save(tipoApuesta);
-    }
-
-    // Actualizar tipo de apuesta
-    @PutMapping("/{id}") // http://localhost:8080/api/tipos-apuesta/{id}
-    public TipoApuesta updateTipoApuesta(@PathVariable Long id, @RequestBody TipoApuesta tipoApuesta) {
-        TipoApuesta tipoExistente = tipoApuestaRepository.findById(id).orElse(null);
-        if (tipoExistente != null) {
-            tipoExistente.setIdTipoApuesta(id);
-            tipoExistente.setNombre(tipoApuesta.getNombre());
-            tipoExistente.setDescripcion(tipoApuesta.getDescripcion());
-            tipoExistente.setEstado(tipoApuesta.getEstado());
-            tipoExistente.setTipoResultado(tipoApuesta.getTipoResultado());
-            return tipoApuestaRepository.save(tipoExistente);
+    @GetMapping
+    public ResponseEntity<List<TipoApuesta>> getAllTiposApuesta() {
+        try {
+            return ResponseEntity.ok(tipoApuestaService.obtenerTodosLosTiposApuesta());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
-        return null;
     }
 
-    // Eliminar tipo de apuesta
-    @DeleteMapping("/{id}") // http://localhost:8080/api/tipos-apuesta/{id}
-    public ResponseEntity<Void> deleteTipoApuesta(@PathVariable Long id) {
-        tipoApuestaRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTipoApuestaById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(tipoApuestaService.obtenerTipoApuestaPorId(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createTipoApuesta(@RequestBody TipoApuesta tipoApuesta) {
+        try {
+            return ResponseEntity.ok(tipoApuestaService.crearTipoApuesta(tipoApuesta));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTipoApuesta(@PathVariable Long id, @RequestBody TipoApuesta tipoApuesta) {
+        try {
+            return ResponseEntity.ok(tipoApuestaService.actualizarTipoApuesta(id, tipoApuesta));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTipoApuesta(@PathVariable Long id) {
+        try {
+            tipoApuestaService.eliminarTipoApuesta(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 }

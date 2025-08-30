@@ -19,7 +19,7 @@ public class HistorialUsuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_historial")
-    private Integer idHistorial;
+    private Long idHistorial;
 
     @ManyToOne
     @JoinColumn(name = "id_usuario", nullable = false)
